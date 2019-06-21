@@ -10,6 +10,7 @@ import glob
 import skimage
 from skimage import filters
 from skimage import morphology
+from skimage import measure
 
 
 def process(img):
