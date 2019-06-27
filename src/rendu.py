@@ -21,7 +21,7 @@ def process(img):
     threshold_val = skimage.filters.threshold_sauvola(blur, window_size=159)
     bin_img = (blur > threshold_val).astype(np.uint8)
     all_labels = skimage.measure.label(1 - skimage.morphology.remove_small_objects((1 - bin_img).astype(bool),min_size=5000))
-    kernel = np.ones((5,5), np.uint8)
+    kernel = np.ones((7,7), np.uint8)
     img_dilate = cv2.dilate(all_labels.astype(np.uint8), kernel, iterations=3) 
     return img_dilate
 
@@ -29,8 +29,8 @@ def intersect(img):
     height, width = img.shape
     step = 60
     intersects = np.full(img.shape, 0)
-    for i in range(0, height-step, step):
-        for j in range(0, width-step, step):
+    for i in range(0, height-step, step//2):
+        for j in range(0, width-step, step//2):
             colors = set()
             for k in range(i, i+step):
                 for l in range(j, j+step):
@@ -40,15 +40,61 @@ def intersect(img):
             if len(colors) >= 4:
                 intersects[i+step//2][j+step//2] = 1
 
+
     # mean
     step = 80
-    res = [] # list of tuple
+    intersects2 = np.full(img.shape, 0)
     for i in range(0, height-step, step):
         for j in range(0, width-step, step):
             pts = []
             for k in range(i, i+step):
                 for l in range(j, j+step):
                     if intersects[k][l] != 0:
+                        pts.append((k, l))
+            if len(pts) >= 2:
+                sum_x = 0
+                sum_y = 0
+                for point in pts:
+                    sum_y += point[0]
+                    sum_x += point[1]
+                mean = (sum_y // len(pts), sum_x // len(pts))
+                intersects2[mean[0]][mean[1]] = 1
+            else:
+                for point in pts:
+                    intersects2[point[0]][point[1]] = 1
+
+
+    # mean
+    step = 100
+    intersects3 = np.full(img.shape, 0)
+    for i in range(0, height-step, step):
+        for j in range(0, width-step, step):
+            pts = []
+            for k in range(i, i+step):
+                for l in range(j, j+step):
+                    if intersects2[k][l] != 0:
+                        pts.append((k, l))
+            if len(pts) >= 2:
+                sum_x = 0
+                sum_y = 0
+                for point in pts:
+                    sum_y += point[0]
+                    sum_x += point[1]
+                mean = (sum_y // len(pts), sum_x // len(pts))
+                intersects3[mean[0]][mean[1]] = 1
+            else:
+                for point in pts:
+                    intersects3[point[0]][point[1]] = 1
+
+
+    step = 85
+    res = [] # list of tuple
+    for i in range(0, height-step, step):
+        for j in range(0, width-step, step):
+            pts = []
+            for k in range(i, i+step):
+                for l in range(j, j+step):
+                    if intersects3[k][l] != 0:
                         pts.append((k, l))
             if len(pts) >= 2:
                 sum_x = 0
