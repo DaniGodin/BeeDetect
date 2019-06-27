@@ -15,14 +15,17 @@ from skimage import measure
 
 def process(img):
     gray = cv2.cvtColor(img, cv2.COLOR_BGR2GRAY)
-    blur = gray
-    for i in range(20):
-        blur = cv2.GaussianBlur(blur,(5,5),0)
-    threshold_val = skimage.filters.threshold_sauvola(blur, window_size=159)
-    bin_img = (blur > threshold_val).astype(np.uint8)
-    all_labels = skimage.measure.label(1 - skimage.morphology.remove_small_objects((1 - bin_img).astype(bool),min_size=5000))
-    kernel = np.ones((7,7), np.uint8)
-    img_dilate = cv2.dilate(all_labels.astype(np.uint8), kernel, iterations=3) 
+    threshold_val = skimage.filters.threshold_sauvola(gray, window_size=159)
+    bin_img = (gray > threshold_val).astype(np.uint8)
+    kernel = np.ones((5,5), np.uint8)
+    blur = cv2.bilateralFilter(bin_img, 10, 75, 75)
+    inv = np.invert(blur)
+    img_dilate = cv2.dilate(inv, kernel, iterations=6)
+    img_erode = cv2.erode(img_dilate, kernel, iterations=3)
+    inv_img = np.invert(img_erode)
+    all_labels = skimage.measure.label(1 - skimage.morphology.remove_small_objects((1 - inv_img).astype(bool),min_size=5000))
+    kernel = np.ones((5,5), np.uint8)
+    img_dilate = cv2.dilate(all_labels.astype(np.uint8), kernel, iterations=6) 
     return img_dilate
 
 def intersect(img):
